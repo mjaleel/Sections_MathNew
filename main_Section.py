@@ -22,7 +22,8 @@ def match_names(names_df, database_df):
     database_df["normalized_name"] = database_df["اسم الموظف"].apply(normalize_name)
 
     database_df = database_df.drop_duplicates(subset=["normalized_name"])
-    database_map = database_df.set_index("normalized_name")[["اسم الموظف", "Iban"]].to_dict(orient="index")
+    # إضافة المحاسب هنا
+    database_map = database_df.set_index("normalized_name")[["اسم الموظف", "Iban", "المحاسب"]].to_dict(orient="index")
 
     matched_results = []
 
@@ -51,6 +52,7 @@ def match_names(names_df, database_df):
                 "الاسم الأصلي": original_name,
                 "الاسم المطابق": match_data["اسم الموظف"],
                 "الآيبان": match_data["Iban"],
+                "المحاسب": match_data["المحاسب"],
                 "نسبة التطابق": f"{round(best_score)}%",
                 "ملاحظة": "✅ تطابق دقيق"
             })
@@ -59,6 +61,7 @@ def match_names(names_df, database_df):
                 "الاسم الأصلي": original_name,
                 "الاسم المطابق": "",
                 "الآيبان": "",
+                "المحاسب": "",
                 "نسبة التطابق": "",
                 "ملاحظة": "❌ لم يتم العثور على تطابق"
             })
@@ -82,7 +85,8 @@ def match_sections(names_df, database_df):
         "الدرجة الوظيفية",
         "العنوان الوظيفي",
         "المدرسة",
-        "الدائرة"
+        "الدائرة",
+        "المحاسب"  # إضافة المحاسب أيضًا في الأقسام
     ]].to_dict(orient="index")
 
     matched_results = []
@@ -116,6 +120,7 @@ def match_sections(names_df, database_df):
                 "العنوان الوظيفي": match_data.get("العنوان الوظيفي", ""),
                 "المدرسة": match_data.get("المدرسة", ""),
                 "الدائرة": match_data.get("الدائرة", ""),
+                "المحاسب": match_data.get("المحاسب", ""),
                 "نسبة التطابق": f"{round(best_score)}%",
                 "ملاحظة": "✅ تطابق دقيق"
             })
@@ -128,6 +133,7 @@ def match_sections(names_df, database_df):
                 "العنوان الوظيفي": "",
                 "المدرسة": "",
                 "الدائرة": "",
+                "المحاسب": "",
                 "نسبة التطابق": "",
                 "ملاحظة": "❌ لم يتم العثور على تطابق"
             })
