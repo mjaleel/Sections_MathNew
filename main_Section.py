@@ -21,9 +21,15 @@ def match_names(names_df, database_df):
     names_df["normalized_name"] = names_df["اسم الموظف"].apply(normalize_name)
     database_df["normalized_name"] = database_df["اسم الموظف"].apply(normalize_name)
 
+    # التحقق إذا عمود المحاسب موجود في القاعدة
+    has_accountant = "المحاسب" in database_df.columns
+
     database_df = database_df.drop_duplicates(subset=["normalized_name"])
-    # إضافة المحاسب هنا
-    database_map = database_df.set_index("normalized_name")[["اسم الموظف", "Iban", "المحاسب"]].to_dict(orient="index")
+    cols = ["اسم الموظف", "Iban"]
+    if has_accountant:
+        cols.append("المحاسب")
+
+    database_map = database_df.set_index("normalized_name")[cols].to_dict(orient="index")
 
     matched_results = []
 
@@ -37,7 +43,9 @@ def match_names(names_df, database_df):
                 best_match = db_name
 
         match_data = None
-        if best_score >= 85 and (is_first_three_words_match(normalized_name, best_match) or best_match.startswith(normalized_name)):
+        if best_match and best_score >= 85 and (
+            is_first_three_words_match(normalized_name, best_match) or best_match.startswith(normalized_name)
+        ):
             match_data = database_map[best_match]
         else:
             for db_name in database_map.keys():
@@ -50,9 +58,9 @@ def match_names(names_df, database_df):
         if match_data:
             matched_results.append({
                 "الاسم الأصلي": original_name,
-                "الاسم المطابق": match_data["اسم الموظف"],
-                "الآيبان": match_data["Iban"],
-                "المحاسب": match_data["المحاسب"],
+                "الاسم المطابق": match_data.get("اسم الموظف", ""),
+                "الآيبان": match_data.get("Iban", ""),
+                "المحاسب": match_data.get("المحاسب", "") if has_accountant else "",
                 "نسبة التطابق": f"{round(best_score)}%",
                 "ملاحظة": "✅ تطابق دقيق"
             })
@@ -70,7 +78,7 @@ def match_names(names_df, database_df):
 
     # تنبيه التكرار
     iban_counts = results_df["الآيبان"].value_counts()
-    results_df["تنبيه"] = results_df["الآيبان"].apply(lambda x: "⚠️ مكرر" if pd.notnull(x) and iban_counts[x] > 1 else "")
+    results_df["تنبيه"] = results_df["الآيبان"].apply(lambda x: "⚠️ مكرر" if pd.notnull(x) and x in iban_counts and iban_counts[x] > 1 else "")
 
     return results_df
 
@@ -78,16 +86,15 @@ def match_sections(names_df, database_df):
     names_df["normalized_name"] = names_df["اسم الموظف"].apply(normalize_name)
     database_df["normalized_name"] = database_df["اسم الموظف"].apply(normalize_name)
 
+    # التحقق من وجود عمود المحاسب
+    has_accountant = "المحاسب" in database_df.columns
+
     database_df = database_df.drop_duplicates(subset=["normalized_name"])
-    database_map = database_df.set_index("normalized_name")[[
-        "اسم الموظف",
-        "Operator Id",
-        "الدرجة الوظيفية",
-        "العنوان الوظيفي",
-        "المدرسة",
-        "الدائرة",
-        "المحاسب"  # إضافة المحاسب أيضًا في الأقسام
-    ]].to_dict(orient="index")
+    cols = ["اسم الموظف", "Operator Id", "الدرجة الوظيفية", "العنوان الوظيفي", "المدرسة", "الدائرة"]
+    if has_accountant:
+        cols.append("المحاسب")
+
+    database_map = database_df.set_index("normalized_name")[cols].to_dict(orient="index")
 
     matched_results = []
 
@@ -101,7 +108,9 @@ def match_sections(names_df, database_df):
                 best_match = db_name
 
         match_data = None
-        if best_score >= 85 and (is_first_three_words_match(normalized_name, best_match) or best_match.startswith(normalized_name)):
+        if best_match and best_score >= 85 and (
+            is_first_three_words_match(normalized_name, best_match) or best_match.startswith(normalized_name)
+        ):
             match_data = database_map[best_match]
         else:
             for db_name in database_map.keys():
@@ -114,13 +123,13 @@ def match_sections(names_df, database_df):
         if match_data:
             matched_results.append({
                 "الاسم الأصلي": original_name,
-                "الاسم المطابق": match_data["اسم الموظف"],
+                "الاسم المطابق": match_data.get("اسم الموظف", ""),
                 "Operator Id": match_data.get("Operator Id", ""),
                 "الدرجة الوظيفية": match_data.get("الدرجة الوظيفية", ""),
                 "العنوان الوظيفي": match_data.get("العنوان الوظيفي", ""),
                 "المدرسة": match_data.get("المدرسة", ""),
                 "الدائرة": match_data.get("الدائرة", ""),
-                "المحاسب": match_data.get("المحاسب", ""),
+                "المحاسب": match_data.get("المحاسب", "") if has_accountant else "",
                 "نسبة التطابق": f"{round(best_score)}%",
                 "ملاحظة": "✅ تطابق دقيق"
             })
